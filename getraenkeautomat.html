@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <title>Getränkeautomat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .drink-button {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            width: 150px;
+        }
+
+        .insufficient-funds {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        #result {
+            color: #006400;
+            margin-top: 20px;
+        }
+
+        #automat-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            width: 100%;
+        }
+
+        #balance {
+            margin-top: 10px;
+            color: #333;
+        }
+
+        #total-amount {
+            margin-top: 10px;
+            color: #333;
+        }
+
+        #button-container {
+            order: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 10px;
+        }
+
+        #insert-money-button,
+        #withdraw-money-button {
+            background-color: #28a745;
+            color: #fff;
+            padding: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        #insert-money-button {
+            order: 1;
+        }
+
+        #withdraw-money-button {
+            order: 2;
+        }
+
+        #purchases {
+            text-align: left;
+            margin-top: 20px;
+            order: 3;
+        }
+
+        #purchase-list {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Getränkeautomat</h1>
+
+    <div id="automat-container">
+        <button class="drink-button" onclick="buyDrink('Cola', 2.00)" data-price="2.00">Cola - 2,00€</button>
+        <button class="drink-button" onclick="buyDrink('Wasser', 1.00)" data-price="1.00">Wasser - 2,00€</button>
+        <button class="drink-button" onclick="buyDrink('Eistee', 2.00)" data-price="2.50">Eistee - 2,50€</button>
+        <button class="drink-button" onclick="buyDrink('Prime', 5.00)" data-price="5.00">Prime - 5,00€</button>
+        <button class="drink-button" onclick="buyDrink('RedBull', 3.00)" data-price="3.00">Redbull - 3,00€</button>
+
+        <div id="button-container">
+            <button id="insert-money-button" onclick="insertMoney()">Geld einwerfen</button>
+            <button id="withdraw-money-button" onclick="withdrawMoney()">Guthaben auszahlen</button>
+        </div>
+
+        <p id="result"></p>
+        <p id="balance">Kontostand: <span id="user-balance">0.00</span>€</p>
+        <p id="total-amount">Gesamtbetrag: <span id="current-total">0.00</span>€</p>
+        
+        <div id="purchases">
+            <h3>Ihre Einkäufe:</h3>
+            <ul id="purchase-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        // Globale Variablen für den Benutzerkontostand, den Gesamtbetrag und die Liste der Einkäufe
+        var userBalance = 0.00;
+        var currentTotal = 0.00;
+        var purchases = [];
+
+        // Funktion zum Aktualisieren des Kontostands auf der Benutzeroberfläche
+        function updateBalance() {
+            document.getElementById("user-balance").innerHTML = userBalance.toFixed(2);
+        }
+
+        // Funktion zum Aktualisieren des Gesamtbetrags auf der Benutzeroberfläche
+        function updateTotal() {
+            document.getElementById("current-total").innerHTML = currentTotal.toFixed(2);
+        }
+
+        // Funktion zum Einwerfen von Geld
+        function insertMoney() {
+            var amount = prompt("Bitte Geld einwerfen:");
+            if (amount !== null && !isNaN(amount)) {
+                amount = parseFloat(amount);
+                userBalance += amount;
+                updateBalance();
+                document.getElementById("result").innerHTML = "Guthaben erfolgreich aufgeladen.";
+                highlightAffordableDrinks();
+            } else {
+                document.getElementById("result").innerHTML = "Ungültige Eingabe. Bitte geben Sie eine Zahl ein.";
+            }
+        }
+
+        // Funktion zum Kauf eines Getränks
+        function buyDrink(drink, price) {
+            if (price <= userBalance) {
+                userBalance -= price;
+                updateBalance();
+                currentTotal += price;
+                updateTotal();
+                
+                purchases.push(drink + " - " + price.toFixed(2) + "€");
+                updatePurchases();
+
+                document.getElementById("result").innerHTML = "Vielen Dank für Ihren Einkauf! Sie haben " + drink + " für " + price.toFixed(2) + "€ gekauft.";
+                highlightAffordableDrinks();
+            } else {
+                document.getElementById("result").innerHTML = "Nicht genügend Guthaben. Bitte werfen Sie mehr Geld ein oder wählen Sie ein günstigeres Getränk.";
+            }
+        }
+
+        // Funktion zum Auszahlen des Guthabens
+        function withdrawMoney() {
+            if (userBalance > 0) {
+                alert("Sie haben " + userBalance.toFixed(2) + "€ ausbezahlt.");
+                userBalance = 0.00;
+                currentTotal = 0.00;
+                purchases = [];
+                updateBalance();
+                updateTotal();
+                updatePurchases();
+                highlightAffordableDrinks();
+            } else {
+                alert("Kein Guthaben zum Auszahlen vorhanden.");
+            }
+        }
+
+        // Funktion zur Hervorhebung der bezahlbaren Getränke
+        function highlightAffordableDrinks() {
+            var drinkButtons = document.getElementsByClassName("drink-button");
+            for (var i = 0; i < drinkButtons.length; i++) {
+                var price = parseFloat(drinkButtons[i].getAttribute("data-price"));
+                if (price <= userBalance) {
+                    drinkButtons[i].classList.remove("insufficient-funds");
+                } else {
+                    drinkButtons[i].classList.add("insufficient-funds");
+                }
+            }
+        }
+
+        // Funktion zum Aktualisieren der Liste der Einkäufe
+        function updatePurchases() {
+            var purchaseList = document.getElementById("purchase-list");
+            purchaseList.innerHTML = "";
+            purchases.forEach(function (purchase) {
+                var listItem = document.createElement("li");
+                listItem.textContent = purchase;
+                purchaseList.appendChild(listItem);
+            });
+        }
+
+        // Initiale Hervorhebung der Getränke, die sich der Benutzer leisten kann
+        highlightAffordableDrinks();
+    </script>
+</body>
+</html>
